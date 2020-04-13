@@ -204,6 +204,7 @@ def get_sold_items_quantity(source):
         sold_info = (int(text2[0]), int(text2[3]))
         return sold_info
  
+ #TODO handle parse exceptions!!
 def get_price(source):
     text = find_element(source,"aria-label=\"cena ", 50)
     text_parts = text.split(" z")
@@ -223,7 +224,7 @@ def get_promo_offers_on_page_quantity(source):
     link_parts = link_source.split("href")
     quantity = int((len(link_parts)-1)/2)
     return quantity
- 
+ #TODO add documentation
 def get_offers_with_no_sales_quantity_on_page(source):
     quantity = 0
     position=0
