@@ -5,6 +5,7 @@ import urllib.request as urllib2
 import urllib.error as url_error
 from datetime import datetime
 import data.Insert as DataBase
+import data.Update as DataBaseUpdate
  
 def find_element(source, substring, shift):
     position = source.find(substring,0,len(source))+len(substring)
@@ -26,7 +27,7 @@ def get_source_code(url):
         print('Error code: ', e.reason)
 
     end=time.time()
-    print("Odebranie " + str(end-start))
+    #print("Odebranie " + str(end-start))
     return text
 
 def get_number_of_offers(source_code):
@@ -37,22 +38,50 @@ def get_number_of_offers(source_code):
 def make_page_link(user_site, site_number):
     return user_site + "?p="+str(site_number)+"&order=qd"
 
-def navigate_to_user_wall(username,conn):
-    now = datetime.now()
-    current_time = now.strftime("%d.%m.%Y;%H:%M:%S")
+def add_user_to_database(username,conn):
+    source_code = get_source_code("https://allegro.pl/uzytkownik/"+username)
+    if(find_element_position(source_code, "Nie znale\\xc5\\xbali\\xc5\\x9bmy u")!=-1):
+        return False
+    else:
+        user_info = get_user_info(source_code,get_source_code("https://allegro.pl/uzytkownik/"+username+"/oceny"), username)
+        DataBase.insert_user(conn,user_info)
+        return True
+
+def get_user_info(source_code, source_code_assessment, username):
+    offers_quantity = get_number_of_offers(source_code)
+    position = find_element_position(source_code_assessment, "\"recommendCount\":")
+    text = source_code_assessment[position+17:position+100]
+    text_parts = text.split(",")
+    recommend_count = int(text.split(",")[0])
+    not_recommend_count = int(text_parts[1].split(":")[1])
+    return (username, recommend_count,not_recommend_count,offers_quantity)
+
+def navigate_to_user_wall(username,conn,raport_id):
+    offers_quantity=0
+
     for x in range(get_page_numbers(get_source_code(make_page_link("https://allegro.pl/uzytkownik/"+username, 1)))):
-        parse_page(get_source_code(make_page_link("https://allegro.pl/uzytkownik/"+username, x+1)), username, conn,current_time)
-        
-def parse_page(page_source, username, conn,current_time):
-    promo_quantity = get_promo_offers_quantity(page_source)
-    offers_quantity = get_offers_quantity(page_source)
+        arrays_for_database = parse_page(get_source_code(make_page_link("https://allegro.pl/uzytkownik/"+username, x+1)), username, conn,raport_id)
+        offers_array = arrays_for_database[0]
+        raports_array = arrays_for_database[1]
+        for single_offer in offers_array:
+            offers_quantity=offers_quantity+1
+            print(single_offer)
+            DataBase.insert_offer(conn,(single_offer[0],single_offer[1],single_offer[2]))
+        for single_raport in raports_array:
+            print(single_raport)
+            DataBase.insert_print(conn, single_raport)
+
+    DataBaseUpdate.update_raports(conn, offers_quantity, raport_id)
+               
+def parse_page(page_source, username, conn, raport_id):
+    promo_quantity = get_promo_offers_on_page_quantity(page_source)
+    offers_quantity = get_offers_on_page_quantity(page_source)
     print("Ofert - " + str(offers_quantity) + ", ofert bez sprzedazy - " + str(get_offers_with_no_sales_quantity_on_page(page_source)))
     price_info = get_offers_price_with_ship(page_source, offers_quantity)
     sale_array = get_offers_array_sales_on_page(page_source, offers_quantity)
     link_array = get_offers_links(offers_quantity, page_source)
-    image_array = get_offer_image_links(offers_quantity, page_source)
-    
-    parse_data(link_array,image_array, promo_quantity, username, conn,current_time, sale_array,price_info[0], price_info[1])
+    image_array = get_offer_image_links(offers_quantity, page_source)  
+    return parse_data(link_array,image_array, promo_quantity, username, sale_array,price_info[0], price_info[1],raport_id)
     
 def get_offers_price_with_ship(source, quantity):
     price_array=[0 for i in range(quantity)]
@@ -78,7 +107,7 @@ def get_offers_price_with_ship(source, quantity):
     return price_with_ship_array, price_array
         
                
-def get_offers_quantity(source):
+def get_offers_on_page_quantity(source):
     counter=0
     link_info = make_offer_link(source)
     new_position = int(link_info[1]) 
@@ -125,24 +154,25 @@ def get_offers_links(offers_quantity, source):
         source = source[link_info[1] + 2 : len(source)-1]
     return link_array
 
-def parse_data(link_array, image_array, promo_quantity, username, conn, current_time, sales_array,price_with_ship_array, price_array):
+def parse_data(link_array, image_array, promo_quantity, username, sales_array,price_with_ship_array, price_array,raport_id):
+    offers_array=[]
+    raports_array=[]
     for x in range(len(link_array)):
         if(promo_quantity>0):
             promoted = 1
             promo_quantity = promo_quantity-1
         else:
             promoted = 0
-        date = current_time.split(";")
         link_parts = link_array[x].split("-")
         offer_id = link_parts[len(link_parts)-1]
         if(sales_array[x]==0):
             sold_info_array=(0,0)
         else:
             sold_info_array = get_sold_items_quantity(get_source_code(link_array[x]))
-        single_print = (offer_id, get_title_from_url(link_array[x], offer_id), price_array[x], price_with_ship_array[x],username, link_array[x], image_array[x], date[0], date[1], sold_info_array[0], sold_info_array[1], promoted)
-        print(single_print)
-        DataBase.insert_offer(conn,(offer_id,sold_info_array[1],username))
-        DataBase.insert_print(conn, single_print)
+        single_print = (offer_id, get_title_from_url(link_array[x], offer_id), price_array[x], price_with_ship_array[x], link_array[x], image_array[x], raport_id, sold_info_array[0], sold_info_array[1], promoted)
+        raports_array.append(single_print)
+        offers_array.append((offer_id,sold_info_array[1],username))
+    return offers_array, raports_array
     
 def find_element_position(source, substring):
     position = source.find(substring,0,len(source))
@@ -163,10 +193,6 @@ def get_page_numbers(source_code):
     return int(split_text[0])
 
 def get_sold_items_quantity(source):
-    text = find_element(source,"<meta property=\"og:title\" content=\"", 200)
-    text = text.split("\">")
-    title = text[0]
-    
     text = find_element(source,"popularity\":{\"label\":", 50)
     sold_info = ()
     text = text[1:len(text)-1]
@@ -186,7 +212,7 @@ def get_price(source):
     price=float(price_main+"."+price_sub)
     return price
     
-def get_promo_offers_quantity(source):
+def get_promo_offers_on_page_quantity(source):
     position = find_element_position(source, "Oferty promowane" )
     if(position==-1):
         return 0
@@ -236,7 +262,14 @@ def get_title_from_url(url, offer_id):
     return title
        
 def init(username, conn):
+    if(add_user_to_database(username,conn)==False):
+        print("Nie ma takiego uzytkownika!")
+        return
+    current_time = datetime.now().strftime("%d. %m.%Y.%H.%M").lstrip("0").replace(" 0", "")
+    raport_id = int(DataBase.insert_raport(current_time, conn, username))
+
     start = time.time()
-    navigate_to_user_wall(username, conn)
+   
+    navigate_to_user_wall(username, conn,raport_id)
     end = time.time()
     print(end - start)

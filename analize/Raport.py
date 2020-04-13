@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from data.Connection import get_connection
 from data.Select import select_all_offers
 from data.Select import select_raports_by_offer_id
+from data.Select import select_user_raports
 from matplotlib.ticker import FuncFormatter
 from io import BytesIO
 from datetime import datetime
@@ -15,27 +16,58 @@ from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
 
 def generate_raport(min_items, username):
-        
+    conn = get_connection()
     pdf = FPDF()
+    pdf.add_font('FreeSansBold', '', 'Allegro_scanner/analize/freesansbold.ttf', uni=True)
+    pdf.add_font('FreeSans', '', 'Allegro_scanner/analize/freesans.ttf', uni=True)
+    pdf.add_page() 
+    pdf.set_font('freesansbold', size = 36)
+    pdf.ln(15)
+    pdf.cell(190, 10, 'Raport sprzedażowy', 0, 0, 'C')
+    pdf.set_font('freesans', size = 20)
+    pdf.ln(15)
+    pdf.cell(190, 10, username, 0, 0, 'C')
+    pdf.ln(65)
+    pdf.cell(190, 10, 'Daty poszczególnych raportów:', 0, 0, 'C')
+    pdf.ln(15)
+
+    raports = select_user_raports(conn,username)
+    for raport in raports:
+        print(get_string_date(raport))
+        pdf.cell(70)
+        pdf.set_font('freesansbold', size = 13)
+        pdf.cell(100, 10, str(raport[0])+' - ')
+        pdf.ln(0.0001)
+        pdf.cell(80)
+        pdf.set_font('freesans', size = 13)
+        pdf.cell(200, 10, get_string_date(raport))
+        pdf.ln(10)
+
+
+
     pdf.add_page()  
     pdf.set_font("Arial", style = 'B', size = 13)
-    conn = get_connection()
+   
     real_counter=0
     shift=0
     select_offers = select_all_offers(conn, username, min_items)
     th = pdf.font_size  
-    print(len(select_offers))
     for x in range (len(select_offers)):
         print(str(int(x/len(select_offers)*100))+"%")
-        select_raports = select_raports_by_offer_id(conn,str(select_offers[x]).split("'")[1])
+
+        offer_id = str(select_offers[x]).split("'")[0]
+        offer_id = offer_id.replace("(","")
+        offer_id = offer_id.replace(",","")
+        offer_id = offer_id.replace(")","")
+        select_raports = select_raports_by_offer_id(conn,offer_id)
         date_list=[]
         sold_items_list=[]
         for y in range (len(select_raports)):
-            date_list.append(select_raports[y][7][0:5])
-            sold_items_list.append(select_raports[y][10])
+            date_list.append(str(select_raports[y][6]))
+            sold_items_list.append(select_raports[y][8])
         
 
-        response = requests.get(select_raports[0][6])
+        response = requests.get(select_raports[0][5])
         img = Image.open(BytesIO(response.content))
         img.save("test"+str(x)+".png", "png")
         
@@ -53,23 +85,13 @@ def generate_raport(min_items, username):
         pdf.ln(5*th)
         os.remove("test"+str(x)+".png")
 
-
-        pdf.set_font("Arial", style = 'B', size = 9)
-        pdf.cell(5)
-        pdf.cell(200, 10, txt="Wystawca: ")
-        pdf.set_font("Arial", style = 'I', size = 9)
-        pdf.ln(0.001)
-        pdf.cell(30)
-        pdf.cell(200, 10, txt=select_raports[0][2])
-        pdf.ln(th)
-            
         pdf.set_font("Arial", style = 'B', size = 9)
         pdf.cell(5)
         pdf.cell(200, 10, txt="Numer oferty: ")
         pdf.set_font("Arial", style = 'I', size = 9)
         pdf.ln(0.001)
         pdf.cell(30)
-        pdf.cell(200, 10, txt=select_raports[0][0])
+        pdf.cell(200, 10, txt=str(select_raports[0][0]))
         pdf.ln(th)
             
         pdf.set_font("Arial", style = 'B', size = 9)
@@ -78,7 +100,7 @@ def generate_raport(min_items, username):
         pdf.set_font("Arial", style = 'I', size = 9)
         pdf.ln(0.001)
         pdf.cell(30)
-        pdf.cell(200, 10, txt=str(select_raports[0][3])+" PLN")
+        pdf.cell(200, 10, txt=str(select_raports[0][2])+" PLN")
         pdf.ln(th)
             
         pdf.set_font("Arial", style = 'B', size = 9)
@@ -87,11 +109,11 @@ def generate_raport(min_items, username):
         pdf.set_font("Arial", style = 'I', size = 9)
         pdf.ln(0.001)
         pdf.cell(30)
-        pdf.cell(200, 10, txt=str(select_raports[0][4])+" PLN")
+        pdf.cell(200, 10, txt=str(select_raports[0][3])+" PLN")
         pdf.ln(th)
 
         sponsored="NIE"
-        if(select_raports[0][11]==1):
+        if(select_raports[0][9]==1):
             sponsored="TAK"
                 
         pdf.set_font("Arial", style = 'B', size = 9)
@@ -103,7 +125,7 @@ def generate_raport(min_items, username):
         pdf.cell(200, 10, txt=sponsored)
         pdf.ln(th)
                     
-        pdf.ln(9*th)
+        pdf.ln(10*th)
         shift=shift+14*th
             
 
@@ -116,7 +138,7 @@ def generate_raport(min_items, username):
             maxim = maxim+10-diff
         plt.bar(date_list[0:len(date_list)], sold_items_list[0:len(sold_items_list)],0.4)
 
-        plt.xlabel('Daty raportow', labelpad=4, fontsize=13)
+        plt.xlabel('Numery raportow', labelpad=4, fontsize=13)
         plt.ylabel('Sprzedanych egzemplarzy', labelpad=18, fontsize=13)
         plt.ylim(int(minim), int(maxim))
         plt.gcf().set_size_inches(11.09, 6.05)
@@ -147,6 +169,28 @@ def generate_raport(min_items, username):
         
         real_counter=real_counter+1
     
-    pdf.output("raport2.pdf")
+    pdf.output("raport_" +username+".pdf")
 
 
+def get_string_date(integers_date):
+    string_date=""
+    if(len(str(integers_date[3]))<2):
+        string_date=string_date+'0'+str(integers_date[3])
+    else:
+        string_date=string_date+str(integers_date[3])
+    string_date=string_date+"."
+    if(len(str(integers_date[4]))<2):
+        string_date=string_date+'0'+str(integers_date[4])
+    else:
+        string_date=string_date+str(integers_date[4])
+    string_date=string_date+"."+str(integers_date[5])+" "
+    if(len(str(integers_date[6]))<2):
+        string_date=string_date+'0'+str(integers_date[6])
+    else:
+        string_date=string_date+str(integers_date[6])
+    string_date=string_date+":"
+    if(len(str(integers_date[7]))<2):
+        string_date=string_date+'0'+str(integers_date[7])
+    else:
+        string_date=string_date+str(integers_date[7])
+    return string_date

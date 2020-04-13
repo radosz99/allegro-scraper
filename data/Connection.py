@@ -14,19 +14,66 @@ def create_connection(db_file):
     return conn
 
 def create_table(conn):
+
+    create_table_sql = """ CREATE TABLE IF NOT EXISTS users (
+                                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                        username TEXT NOT NULL,
+                                        recommend_count INTEGER, 
+                                        not_recommend_count INTEGER,
+                                        offers_quantity INTEGER
+                                    ); """
+    try:
+        c = conn.cursor()
+        c.execute(create_table_sql)
+    except Error as e:
+        print(e)
+
+    create_table_sql = """ CREATE TABLE IF NOT EXISTS raports (
+                                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                        user_id INTEGER NOT NULL,
+                                        offers_quantity INTEGER,
+                                        day INTEGER NOT NULL,
+                                        month INTEGER NOT NULL,
+                                        year INTEGER NOT NULL,
+                                        hour INTEGER NOT NULL,
+                                        minutes INTEGER NOT NULL,
+                                        FOREIGN KEY(user_id) REFERENCES users(id)
+                                    ); """
+
+    try:
+        c = conn.cursor()
+        c.execute(create_table_sql)
+    except Error as e:
+        print(e)   
+
+ 
+    create_table_sql = """ CREATE TABLE IF NOT EXISTS offers (
+                                        id INTEGER PRIMARY KEY,
+                                        user_id INTEGER NOT NULL,
+                                        last_items_sold INTEGER,
+                                        first_items_sold INTEGER,
+                                        raports_quantity INTEGER,
+                                        FOREIGN KEY(user_id) REFERENCES users(id)
+                                    ); """
+    try:
+        c = conn.cursor()
+        c.execute(create_table_sql)
+    except Error as e:
+        print(e)    
+
     create_table_sql = """ CREATE TABLE IF NOT EXISTS stats (
-                                        offer_id text NOT NULL,
-                                        offer_title text,
-                                        username text NOT NULL,
-                                        price real not NULL,
-                                        price_with_ship real,
-                                        offer_url text NOT NULL,
-                                        offer_img_url text,
-                                        analize_day text NOT NULL,
-                                        analize_hour text NOT NULL,
-                                        buyers int NOT NULL,
-                                        items_sold int NOT NULL,
-                                        promoted int NOT NULL
+                                        offer_id INTEGER NOT NULL,
+                                        offer_title TEXT,
+                                        price REAL not NULL,
+                                        price_with_ship REAL,
+                                        offer_url TEXT,
+                                        offer_img_url TEXT,
+                                        raport_id INTEGER NOT NULL,
+                                        buyers INTEGER,
+                                        items_sold INTEGER,
+                                        promoted INTEGER,
+                                        FOREIGN KEY(offer_id) REFERENCES offers(id)
+                                        FOREIGN KEY(raport_id) REFERENCES raports(id)
                                     ); """
     try:
         c = conn.cursor()
@@ -35,22 +82,10 @@ def create_table(conn):
         print(e)
 
 
-    create_table_sql = """ CREATE TABLE IF NOT EXISTS offers (
-                                        offer_id text NOT NULL,
-                                        username text NOT NULL,
-                                        last_items_sold int,
-                                        first_items_sold int,
-                                        raports_quantity int
-                                    ); """
-    try:
-        c = conn.cursor()
-        c.execute(create_table_sql)
-    except Error as e:
-        print(e)    
 
 def get_connection():
-    #database = r"Allegro_scanner\data\database\stats.db"
-    database = r"C:\Users\Radek\Desktop\Allegro_analizer\sqlite\db\pythonsqlite.db"
+    #database = r"C:\Users\Radek\Desktop\Allegro_analizer\sqlite\db\pythonsqlite.db"
+    database = r"Allegro_scanner\data\database\stats.db"
 
     # create a database connection
     conn = create_connection(database)

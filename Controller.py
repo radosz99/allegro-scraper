@@ -4,11 +4,11 @@ from data.Connection import get_connection
 from analize.Raport import generate_raport
 from analize.Analize import get_sales_difference
 def scan():
-    username="blogomania"
+    username="sport_i_styl"
     init(username, get_connection())
 
 def raport():
-    username="sport_i_styl"
+    username="krawiectwoKM"
     min_items = 5
     generate_raport(min_items,username)
 
