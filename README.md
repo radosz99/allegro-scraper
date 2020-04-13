@@ -2,7 +2,7 @@
 The application scans and generates sales reports of exhibitors on the Allegro platform.  
 
 Sample report in *.pdf* format:
-<img src="https://i.imgur.com/F62El7P.png" width="100%"/>
+<img src="https://i.imgur.com/h8iT3GO.png" width="100%"/>
 
 # Technologies
 - Python 3.7,
