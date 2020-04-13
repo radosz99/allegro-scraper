@@ -2,6 +2,7 @@ import time
 import math
 import functools 
 import urllib.request as urllib2
+import urllib.error as url_error
 from datetime import datetime
 import data.Insert as DataBase
  
@@ -11,10 +12,19 @@ def find_element(source, substring, shift):
     return text
 
 def get_source_code(url):
-    #print(url)
+    print(url)
     start=time.time()
-    response = urllib2.urlopen(url)
-    text = str(response.read())
+    text=''
+    try:
+        response = urllib2.urlopen(url)
+        text = str(response.read())
+    except url_error.HTTPError as f:
+        print("Brak odpowiedzi od serwera")
+        print('Error code: ', f.code)
+    except url_error.URLError as e:
+        print("Zły url")
+        print('Error code: ', e.reason)
+
     end=time.time()
     print("Odebranie " + str(end-start))
     return text
@@ -126,12 +136,13 @@ def parse_data(link_array, image_array, promo_quantity, username, conn, current_
         link_parts = link_array[x].split("-")
         offer_id = link_parts[len(link_parts)-1]
         if(sales_array[x]==0):
-            single_print = (offer_id, get_title_from_url(link_array[x], offer_id), price_array[x], price_with_ship_array[x],username, link_array[x], image_array[x], date[0], date[1], 0, 0, promoted)
+            sold_info_array=(0,0)
         else:
             sold_info_array = get_sold_items_quantity(get_source_code(link_array[x]))
-            single_print = (offer_id, get_title_from_url(link_array[x], offer_id), price_array[x], price_with_ship_array[x],username, link_array[x], image_array[x], date[0], date[1], sold_info_array[0], sold_info_array[1], promoted)
+        single_print = (offer_id, get_title_from_url(link_array[x], offer_id), price_array[x], price_with_ship_array[x],username, link_array[x], image_array[x], date[0], date[1], sold_info_array[0], sold_info_array[1], promoted)
         print(single_print)
-        #DataBase.create_print(conn, single_print)
+        DataBase.insert_offer(conn,(offer_id,sold_info_array[1],username))
+        DataBase.insert_print(conn, single_print)
     
 def find_element_position(source, substring):
     position = source.find(substring,0,len(source))

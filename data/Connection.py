@@ -33,10 +33,24 @@ def create_table(conn):
         c.execute(create_table_sql)
     except Error as e:
         print(e)
-        
+
+
+    create_table_sql = """ CREATE TABLE IF NOT EXISTS offers (
+                                        offer_id text NOT NULL,
+                                        username text NOT NULL,
+                                        last_items_sold int,
+                                        first_items_sold int,
+                                        raports_quantity int
+                                    ); """
+    try:
+        c = conn.cursor()
+        c.execute(create_table_sql)
+    except Error as e:
+        print(e)    
 
 def get_connection():
-    database = r"Allegro_scanner\data\database\stats.db"
+    #database = r"Allegro_scanner\data\database\stats.db"
+    database = r"C:\Users\Radek\Desktop\Allegro_analizer\sqlite\db\pythonsqlite.db"
 
     # create a database connection
     conn = create_connection(database)

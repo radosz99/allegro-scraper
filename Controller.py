@@ -1,9 +1,21 @@
 import numpy
 from scan.Scanner import init
 from data.Connection import get_connection
-def main():
-    username="Allegro"
+from analize.Raport import generate_raport
+from analize.Analize import get_sales_difference
+def scan():
+    username="blogomania"
     init(username, get_connection())
 
+def raport():
+    username="sport_i_styl"
+    min_items = 5
+    generate_raport(min_items,username)
+
+def sales_raport():
+    username="krawiectwoKM"
+    print(get_sales_difference(username))
 if __name__ == "__main__":
-    main()
+    #scan()
+    raport()
+    #sales_raport()
