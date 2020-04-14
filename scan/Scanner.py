@@ -38,6 +38,7 @@ def get_number_of_offers(source_code):
 def make_page_link(user_site, site_number):
     return user_site + "?p="+str(site_number)+"&order=qd"
 
+#TODO method that scan offers with min selected items sold
 def add_user_to_database(username,conn):
     source_code = get_source_code("https://allegro.pl/uzytkownik/"+username)
     if(find_element_position(source_code, "Nie znale\\xc5\\xbali\\xc5\\x9bmy u")!=-1):
@@ -60,16 +61,8 @@ def navigate_to_user_wall(username,conn,raport_id):
     offers_quantity=0
 
     for x in range(get_page_numbers(get_source_code(make_page_link("https://allegro.pl/uzytkownik/"+username, 1)))):
-        arrays_for_database = parse_page(get_source_code(make_page_link("https://allegro.pl/uzytkownik/"+username, x+1)), username, conn,raport_id)
-        offers_array = arrays_for_database[0]
-        raports_array = arrays_for_database[1]
-        for single_offer in offers_array:
-            offers_quantity=offers_quantity+1
-            print(single_offer)
-            DataBase.insert_offer(conn,(single_offer[0],single_offer[1],single_offer[2]))
-        for single_raport in raports_array:
-            print(single_raport)
-            DataBase.insert_print(conn, single_raport)
+        quantity = parse_page(get_source_code(make_page_link("https://allegro.pl/uzytkownik/"+username, x+1)), username, conn,raport_id)
+        offers_quantity=offers_quantity+quantity
 
     DataBaseUpdate.update_raports(conn, offers_quantity, raport_id)
                
@@ -81,7 +74,7 @@ def parse_page(page_source, username, conn, raport_id):
     sale_array = get_offers_array_sales_on_page(page_source, offers_quantity)
     link_array = get_offers_links(offers_quantity, page_source)
     image_array = get_offer_image_links(offers_quantity, page_source)  
-    return parse_data(link_array,image_array, promo_quantity, username, sale_array,price_info[0], price_info[1],raport_id)
+    return parse_data(link_array,image_array, promo_quantity, username, sale_array,price_info[0], price_info[1],raport_id, conn)
     
 def get_offers_price_with_ship(source, quantity):
     price_array=[0 for i in range(quantity)]
@@ -123,7 +116,6 @@ def get_offer_image_links(offers_quantity,source):
     image_array=[0 for i in range(offers_quantity)]
     for x in range(offers_quantity):
         link_info =make_image_link_universal(source)
-        #link_info = make_image_link(source)
         source = source[int(link_info[1]) + 20 : len(source)-1]
         image_array[x]=link_info[0]
     return image_array    
@@ -154,9 +146,7 @@ def get_offers_links(offers_quantity, source):
         source = source[link_info[1] + 2 : len(source)-1]
     return link_array
 
-def parse_data(link_array, image_array, promo_quantity, username, sales_array,price_with_ship_array, price_array,raport_id):
-    offers_array=[]
-    raports_array=[]
+def parse_data(link_array, image_array, promo_quantity, username, sales_array,price_with_ship_array, price_array,raport_id, conn):
     for x in range(len(link_array)):
         if(promo_quantity>0):
             promoted = 1
@@ -170,9 +160,12 @@ def parse_data(link_array, image_array, promo_quantity, username, sales_array,pr
         else:
             sold_info_array = get_sold_items_quantity(get_source_code(link_array[x]))
         single_print = (offer_id, get_title_from_url(link_array[x], offer_id), price_array[x], price_with_ship_array[x], link_array[x], image_array[x], raport_id, sold_info_array[0], sold_info_array[1], promoted)
-        raports_array.append(single_print)
-        offers_array.append((offer_id,sold_info_array[1],username))
-    return offers_array, raports_array
+        single_offer = (offer_id,sold_info_array[1],username)
+        print(single_offer)
+        print(single_print)
+        DataBase.insert_offer(conn,single_offer)
+        DataBase.insert_print(conn, single_print)
+    return len(link_array)
     
 def find_element_position(source, substring):
     position = source.find(substring,0,len(source))

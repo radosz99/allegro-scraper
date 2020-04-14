@@ -75,7 +75,6 @@ def generate_raport(min_items, username):
         width = int(width/8)
         height = int(height/8)
         pdf.image("test"+str(x)+".png",20, 10+shift, width,height,'PNG')
-        #+ '\t' +single_raport_info[8]
         pdf.set_font("Arial", style = 'B', size = 13)
         if(x==0):
             pdf.ln(3)
