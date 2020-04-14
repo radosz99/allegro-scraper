@@ -1,9 +1,9 @@
 import numpy
-from scan.scanner import init
-from data.connection import get_connection
-from analize.raport import generate_raport
-from analize.analize import get_sales_raport
-from analize.analize import get_difference_two_raports
+from Allegro_scanner.scan.scanner import init
+from Allegro_scanner.data.connection import get_connection
+from Allegro_scanner.analize.raport import generate_raport
+from Allegro_scanner.analize.analize import get_sales_raport
+from Allegro_scanner.analize.analize import get_difference_two_raports
 def scan():
     username="blogomania"
     init(username, get_connection())
