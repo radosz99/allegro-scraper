@@ -4,8 +4,8 @@ import functools
 import urllib.request as urllib2
 import urllib.error as url_error
 from datetime import datetime
-import data.Insert as DataBase
-import data.Update as DataBaseUpdate
+import data.insert as DataBase
+import data.update as DataBaseUpdate
  
 def find_element(source, substring, shift):
     position = source.find(substring,0,len(source))+len(substring)

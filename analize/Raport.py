@@ -1,19 +1,19 @@
 from fpdf import FPDF
 from PIL import Image
-import requests
-import random
-import math
-import os
-import matplotlib.pyplot as plt
-from data.Connection import get_connection
-from data.Select import select_all_offers
-from data.Select import select_raports_by_offer_id
-from data.Select import select_user_raports
+from data.connection import get_connection
+from data.select import select_all_offers
+from data.select import select_raports_by_offer_id
+from data.select import select_user_raports
 from matplotlib.ticker import FuncFormatter
 from io import BytesIO
 from datetime import datetime
 from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
+import requests
+import random
+import math
+import os
+import matplotlib.pyplot as plt
 
 def generate_raport(min_items, username):
     conn = get_connection()

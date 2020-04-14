@@ -1,14 +1,14 @@
-from data.Connection import get_connection
-from data.Select import select_user_raports_id
-from data.Select import select_user_offers
-from data.Select import select_user_raports
-from data.Select import select_money_from_offer
-from data.Select import select_money_from_offer_without_mask
-from data.Select import select_raport_by_date_and_user
-from data.Select import select_stats_by_raport_id
-from data.Select import select_sold_items_by_raport_id_and_offer_id
-from data.Select import select_stats_by_raport_id_and_key
-from analize.Raport import get_string_date
+from data.connection import get_connection
+from data.select import select_user_raports_id
+from data.select import select_user_offers
+from data.select import select_user_raports
+from data.select import select_money_from_offer
+from data.select import select_money_from_offer_without_mask
+from data.select import select_raport_by_date_and_user
+from data.select import select_stats_by_raport_id
+from data.select import select_sold_items_by_raport_id_and_offer_id
+from data.select import select_stats_by_raport_id_and_key
+from analize.raport import get_string_date
 import matplotlib.pyplot as plt
 
 
